@@ -10,6 +10,9 @@ export const useAuthStore = create(
       setHydrated: () => set({ hydrated: true }),
       setSession: (session) => set({ token: session.token, user: session.user }),
       clearSession: () => set({ token: null, user: null }),
+      
+      // Added logout method
+      logout: () => set({ token: null, user: null }),
     }),
     {
       name: 'gullycart-auth',

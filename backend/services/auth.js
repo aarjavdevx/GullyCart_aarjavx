@@ -37,11 +37,13 @@ async function registerUser({ name, phone, email, password, role = 'user' }) {
     throw new Error('Invalid user role.');
   }
 
+  const normalizedEmail = email?.trim().toLowerCase() || undefined;
+  const normalizedPhone = phone.trim();
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const user = await userRepository.create({
     name,
-    phone,
-    email,
+    phone: normalizedPhone,
+    email: normalizedEmail,
     passwordHash,
     role,
   });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import '../styles/AdminDashboard.css'
 import { useAuthStore } from '../stores/authStore'
 
@@ -14,7 +14,11 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [suspendingVendor, setSuspendingVendor] = useState(null)
+  
   const token = useAuthStore((state) => state.token)
+  // Assuming your Zustand store has a logout or clearAuth function
+  const logout = useAuthStore((state) => state.logout) 
+  const navigate = useNavigate()
 
   const request = useCallback(async (path, options = {}) => {
     const response = await fetch(`${apiUrl}${path}`, {
@@ -65,11 +69,29 @@ function AdminDashboard() {
     } catch (error) { setMessage(error.message) }
   }
 
+  const handleLogout = () => {
+    logout()
+    navigate('/login') // Adjust this route based on your routing setup
+  }
+
   if (loading && !dashboard) return <main className="admin-loading">Loading admin workspace...</main>
 
   return (
     <div className="admin-shell">
-      <header className="admin-topbar"><Link className="admin-brand" to="/"><span>G</span> GullyCart <small>control room</small></Link><div className="admin-identity"><span className="admin-avatar">A</span><span>Administrator</span></div></header>
+      <header className="admin-topbar">
+        <Link className="admin-brand" to="/"><span>G</span> GullyCart <small>control room</small></Link>
+        <div className="admin-identity">
+          <span className="admin-avatar">A</span>
+          <span>Administrator</span>
+          <button 
+            onClick={handleLogout} 
+            className="admin-logout-btn"
+            style={{ marginLeft: '1rem', padding: '0.25rem 0.75rem', cursor: 'pointer', background: 'transparent', border: '1px solid currentColor', borderRadius: '4px' }}
+          >
+            Logout
+          </button>
+        </div>
+      </header>
       <main className="admin-content">
         <section className="admin-intro"><div><p className="admin-eyebrow">Platform oversight</p><h1>Good morning, admin.</h1><p>Review vendor applications, keep the marketplace trustworthy, and resolve reports.</p></div><div className="admin-date">LIVE OPERATIONS<br /><strong>Today</strong></div></section>
         {message && <div className="admin-message">{message}<button onClick={() => setMessage('')}>Dismiss</button></div>}

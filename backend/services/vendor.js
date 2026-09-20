@@ -1,4 +1,5 @@
 const { vendorRepository } = require('../repositories');
+const { normalizePoint } = require('../utils/geo');
 
 const PROFILE_FIELDS = ['businessName', 'categories', 'procurementTime'];
 
@@ -26,7 +27,8 @@ function findNearbyVendors(longitude, latitude, maxDistance = 2000) {
 
 function updateVendorLocation(vendorId, longitude, latitude) {
   validateCoordinates(longitude, latitude);
-  return vendorRepository.updateLocation(vendorId, Number(longitude), Number(latitude));
+  const point = normalizePoint([latitude, longitude]);
+  return vendorRepository.updateLocation(vendorId, point.coordinates[0], point.coordinates[1]);
 }
 
 function setVendorSellingStatus(vendorId, isActive) {
@@ -53,7 +55,9 @@ async function getVendorProfileForUser(userId) {
 }
 
 async function updateVendorProfile(vendorId, updates) {
-  const vendor = await vendorRepository.updateById(vendorId, pickProfileUpdates(updates));
+  const profileUpdates = pickProfileUpdates(updates);
+  if (profileUpdates.currentLocation) profileUpdates.currentLocation = normalizePoint(profileUpdates.currentLocation);
+  const vendor = await vendorRepository.updateById(vendorId, profileUpdates);
   if (!vendor) throw new Error('Vendor profile not found.');
   return vendor;
 }

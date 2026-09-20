@@ -1,4 +1,5 @@
 const { productRepository, orderRepository } = require('../repositories');
+const { normalizePoint } = require('../utils/geo');
 
 const STATUS_TRANSITIONS = {
   pending: ['accepted', 'cancelled', 'expired'],
@@ -49,7 +50,7 @@ async function createOrder({ customerId, vendorId, items, pickupLocation, expire
     vendorId,
     items: orderItems,
     totalAmount: Math.round(totalAmount * 100) / 100,
-    pickupLocation,
+    pickupLocation: normalizePoint(pickupLocation),
     expiresAt: expiresAt || new Date(Date.now() + 30 * 60 * 1000),
   });
 }

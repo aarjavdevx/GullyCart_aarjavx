@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import { io } from 'socket.io-client'
 import { useAuthStore } from '../stores/authStore'
@@ -47,6 +47,13 @@ function parseVoiceInventory(text) {
 }
 
 function VendorDashboard() {
+  const navigate = useNavigate() // Added navigation hook
+  const token = useAuthStore((state) => state.token)
+  
+  // Added Zustand logout action (ensure your authStore has a clear auth / logout method)
+  // If your method is named differently (like 'clearToken'), change 'logout' to match your store
+  const logout = useAuthStore((state) => state.logout || state.clearAuth) 
+
   const [inventory, setInventory] = useState(demoInventory)
   const [orders, setOrders] = useState(demoOrders)
   const [nearbyOrders, setNearbyOrders] = useState(demoNearbyOrders)
@@ -56,7 +63,6 @@ function VendorDashboard() {
   const [isLive, setIsLive] = useState(false)
   const [location, setLocation] = useState([28.6139, 77.209])
   const recognitionRef = useRef(null)
-  const token = useAuthStore((state) => state.token)
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
   const activeCount = inventory.filter((item) => item.status === 'active').length
@@ -116,11 +122,28 @@ function VendorDashboard() {
     setIsLive((current) => !current)
   }
 
+  // Handle Logout Execution
+  function handleLogout() {
+    if (logout) {
+      logout() // Clears the Zustand auth state
+    } else {
+      // Fallback if your store doesn't have a logout method
+      localStorage.removeItem('token')
+    }
+    navigate('/login') // Redirects back to the login page
+  }
+
   return (
     <div className="vendor-shell">
       <header className="vendor-topbar">
-        <Link className="vendor-brand" to="/"><span>G</span> GullyCart <small>vendor studio</small></Link>
-        <div className="vendor-top-actions"><span className={`live-dot ${isLive ? 'on' : ''}`}></span>{isLive ? 'Live session' : 'Session paused'}<button className="outline-button" onClick={toggleLive}>{isLive ? 'Stop selling' : 'Start selling'}</button></div>
+        <span className="text-lg"><strong>Vendor Studio</strong></span>
+        <div className="vendor-top-actions">
+          <span className={`live-dot ${isLive ? 'on' : ''}`}></span>
+          {isLive ? 'Live session' : 'Session paused'}
+          <button className="outline-button" onClick={toggleLive}>
+            {isLive ? 'Stop selling' : 'Start selling'}
+          </button>
+        </div>
       </header>
 
       <main className="vendor-content">
@@ -134,7 +157,7 @@ function VendorDashboard() {
             <div className="voice-box"><div className={`mic-icon ${isListening ? 'listening' : ''}`}>◉</div><div><strong>{isListening ? 'Listening...' : 'Say item, quantity and price'}</strong><span>Try “10 kg tomatoes at 40 rupees”</span></div><label className="language-control">Language <input className="language-select" list="browser-languages" value={speechLanguage} onChange={(event) => setSpeechLanguage(event.target.value)} placeholder="en-IN" /><datalist id="browser-languages">{(navigator.languages || [navigator.language]).map((language) => <option key={language} value={language} />)}</datalist></label><button className="mic-button" onClick={toggleListening}>{isListening ? 'Stop' : 'Speak'}</button></div>
             <textarea className="voice-input" value={voiceText} onChange={(event) => setVoiceText(event.target.value)} placeholder="Your inventory words appear here..." />
             {parsedVoiceItems.length > 0 && <button className="add-voice-button" onClick={addVoiceItems}>Add {parsedVoiceItems.length} items to inventory</button>}
-            <div className="inventory-list">{inventory.map((item) => <div className="inventory-row" key={item._id}><span className={`stock-status ${item.status}`}></span><label className="image-picker">{item.imagePreview || item.imageUrl ? <img src={item.imagePreview || item.imageUrl} alt={item.itemName} /> : <span>+</span>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => selectProductImage(item._id, event.target.files[0])} /></label><input value={item.itemName} onChange={(event) => updateInventory(item._id, 'itemName', event.target.value)} /><input className="quantity-input" value={item.quantity} onChange={(event) => updateInventory(item._id, 'quantity', event.target.value)} /><select className="unit-input" value={item.unit || 'kg'} onChange={(event) => updateInventory(item._id, 'unit', event.target.value)}><option value="kg">kg</option><option value="piece">piece</option><option value="bundle">bundle</option><option value="dozen">dozen</option></select><label className="price-input"><span>₹</span><input type="number" min="0" value={item.price ?? ''} onChange={(event) => updateInventory(item._id, 'price', Number(event.target.value))} /></label><select value={item.status} onChange={(event) => updateInventory(item._id, 'status', event.target.value)}><option value="active">Active</option><option value="sold_out">Sold out</option></select></div>)}</div>
+            <div className="inventory-list">{inventory.map((item) => <div className="inventory-row" key={item._id}><span className={`stock-status ${item.status}`}></span><label className="image-picker">{item.imagePreview || item.imageUrl ? <img src={item.imagePreview || item.imageUrl} alt={item.itemName} /> : <span>+</span>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => selectProductImage(item._id, event.target.files[0])} /></label><input value={item.itemName} onChange={(event) => updateInventory(item._id, 'itemName', event.target.value)} /><input className="quantity-input" value={item.quantity} onChange={(event) => updateInventory(item._id, 'quantity', event.target.value)} /><select className="unit-input" value={item.unit || 'kg'} onChange={(event) => updateInventory(item._id, 'unit', event.target.value)}><option value="kg">kg</option><option value="piece">piece</option><option value="bundle">bundle</option><option value="dozen">dozen</option></select><label className="price-input"><span>₹</span><input type="number" min="0" value={item.price ?? ''} onChange={(event) => updateInventory(item._id, 'price', event.target.value === '' ? '' : Number(event.target.value))} /></label><select value={item.status} onChange={(event) => updateInventory(item._id, 'status', event.target.value)}><option value="active">Active</option><option value="sold_out">Sold out</option></select></div>)}</div>
             <button className="save-button">Save inventory changes</button>
           </section>
 

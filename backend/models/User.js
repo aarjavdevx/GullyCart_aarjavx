@@ -5,19 +5,20 @@ const USER_ROLES = ['user', 'vendor', 'admin'];
 const userSchema = new mongoose.Schema(
   {
     name: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 100,
+        type: String,
+        required: [true, 'Name is required'],
+        // The regex below allows uppercase/lowercase letters and spaces
+        match: [/^[a-zA-Z\s]+$/, 'Name can only contain alphabets'] 
     },
     phone: {
       type: String,
-      required: true,
+      required: [true, 'Phone number is required'],
       unique: true,
       trim: true,
     },
     email: {
       type: String,
+      required: [true, 'Email is required'],
       trim: true,
       lowercase: true,
       unique: true,
@@ -38,12 +39,11 @@ const userSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ['Point'],
-        default: 'Point',
       },
       coordinates: {
         type: [Number],
         validate: {
-          validator: (coordinates) => coordinates.length === 2,
+          validator: (coordinates) => !coordinates ||coordinates.length === 2,
           message: 'Location coordinates must be [longitude, latitude].',
         },
       },

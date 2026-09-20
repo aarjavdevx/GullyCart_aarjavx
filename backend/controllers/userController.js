@@ -10,4 +10,9 @@ async function updateProfile(request, response) {
   return response.json({ user });
 }
 
-module.exports = { getProfile, updateProfile };
+async function updateCredentials(request, response) {
+  const user = await userService.updateUserCredentials(request.user.id, request.body);
+  return response.json({ user, message: 'Account credentials updated successfully.' });
+}
+
+module.exports = { getProfile, updateProfile, updateCredentials };

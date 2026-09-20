@@ -5,13 +5,23 @@ function asyncHandler(controller) {
 }
 
 function sendError(error, response) {
-  const statusCode = error.message?.includes('required') || error.message?.includes('Invalid')
+  if (error.code === 11000) {
+    const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'field';
+    return response.status(409).json({ message: `${field} is already registered.` });
+  }
+
+  if (error.name === 'ValidationError') {
+    return response.status(400).json({ message: Object.values(error.errors).map((item) => item.message).join(' ') });
+  }
+
+  const message = error.message || 'Internal server error.';
+  const statusCode = /required|invalid|incorrect|password|coordinates/i.test(message)
     ? 400
-    : error.message?.includes('not found')
+    : /not found/i.test(message)
       ? 404
       : 500;
 
-  return response.status(statusCode).json({ message: error.message || 'Internal server error.' });
+  return response.status(statusCode).json({ message });
 }
 
 module.exports = { asyncHandler, sendError };

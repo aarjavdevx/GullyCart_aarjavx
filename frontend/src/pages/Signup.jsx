@@ -31,12 +31,12 @@ const Signup = () => {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
         navigate('/login');
       } else {
-        setError(data.message || 'Signup failed');
+        setError(data.message || `Signup failed (${response.status})`);
       }
     } catch {
       setError('Server error. Please try again.');
